@@ -38,15 +38,15 @@ public class FlutterAudioManagerPlugin implements FlutterPlugin, MethodCallHandl
     audioManager = (AudioManager) activeContext.getSystemService(Context.AUDIO_SERVICE);
   }
 
-//  public static void registerWith(Registrar registrar) {
-//    channel = new MethodChannel(registrar.messenger(), "flutter_audio_manager");
-//    channel.setMethodCallHandler(new FlutterAudioManagerPlugin());
-//    receiver = new AudioChangeReceiver(listener);
-//    IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
-//    activeContext = registrar.activeContext();
-//    activeContext.registerReceiver(receiver, filter);
-//    audioManager = (AudioManager) activeContext.getSystemService(Context.AUDIO_SERVICE);
-//  }
+ public static void registerWith(Registrar registrar) {
+   channel = new MethodChannel(registrar.messenger(), "flutter_audio_manager");
+   channel.setMethodCallHandler(new FlutterAudioManagerPlugin());
+   receiver = new AudioChangeReceiver(listener);
+   IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
+   activeContext = registrar.activeContext();
+   activeContext.registerReceiver(receiver, filter);
+   audioManager = (AudioManager) activeContext.getSystemService(Context.AUDIO_SERVICE);
+ }
 
   static AudioEventListener listener = new AudioEventListener() {
     @Override
