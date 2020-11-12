@@ -124,8 +124,13 @@ public class SwiftFlutterAudioManagerPlugin: NSObject, FlutterPlugin {
                 let reason = AVAudioSession.RouteChangeReason(rawValue:reasonValue) else {
                     return
             }
-            print("registerAudioRouteChangeBlock \(reason)");
             self.channel!.invokeMethod("inputChanged",arguments: 1)
         }
     }
+    
+    public override 
+    
+    func removeObserverAfterLogout() {
+          NotificationCenter.default.removeObserver(self, name: AVAudioSession.routeChangeNotification, object: nil)
+      }
 }

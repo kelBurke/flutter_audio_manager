@@ -25,27 +25,28 @@ public class FlutterAudioManagerPlugin implements FlutterPlugin, MethodCallHandl
   private static MethodChannel channel;
   private static AudioManager audioManager;
   private static Context activeContext;
+  private static AudioChangeReceiver receiver;
 
   @Override
   public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
     channel = new MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), "flutter_audio_manager");
     channel.setMethodCallHandler(new FlutterAudioManagerPlugin());
-    AudioChangeReceiver receiver = new AudioChangeReceiver(listener);
+    receiver = new AudioChangeReceiver(listener);
     IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
     activeContext = flutterPluginBinding.getApplicationContext();
     activeContext.registerReceiver(receiver, filter);
     audioManager = (AudioManager) activeContext.getSystemService(Context.AUDIO_SERVICE);
   }
 
-  public static void registerWith(Registrar registrar) {
-    channel = new MethodChannel(registrar.messenger(), "flutter_audio_manager");
-    channel.setMethodCallHandler(new FlutterAudioManagerPlugin());
-    AudioChangeReceiver receiver = new AudioChangeReceiver(listener);
-    IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
-    activeContext = registrar.activeContext();
-    activeContext.registerReceiver(receiver, filter);
-    audioManager = (AudioManager) activeContext.getSystemService(Context.AUDIO_SERVICE);
-  }
+//  public static void registerWith(Registrar registrar) {
+//    channel = new MethodChannel(registrar.messenger(), "flutter_audio_manager");
+//    channel.setMethodCallHandler(new FlutterAudioManagerPlugin());
+//    receiver = new AudioChangeReceiver(listener);
+//    IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
+//    activeContext = registrar.activeContext();
+//    activeContext.registerReceiver(receiver, filter);
+//    audioManager = (AudioManager) activeContext.getSystemService(Context.AUDIO_SERVICE);
+//  }
 
   static AudioEventListener listener = new AudioEventListener() {
     @Override
@@ -148,7 +149,6 @@ public class FlutterAudioManagerPlugin implements FlutterPlugin, MethodCallHandl
   }
 
   private String _getDeviceType(int type) {
-    Log.d("type", "type: " + type);
     switch (type) {
       case 3:
         return "3";
@@ -164,6 +164,7 @@ public class FlutterAudioManagerPlugin implements FlutterPlugin, MethodCallHandl
   @Override
   public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
     // 切换到正常的模式
+    activeContext.unregisterReceiver(receiver);
     if(channel != null){
       channel.setMethodCallHandler(null);
       channel = null;
