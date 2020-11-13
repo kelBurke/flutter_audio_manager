@@ -72,15 +72,26 @@ class _MyAppState extends State<MyApp> {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
-            bool res = false;
-            if (_currentInput.port == AudioPort.receiver) {
-              res = await _flutterAudioManager.changeToSpeaker();
-              print("change to speaker:$res");
-            } else {
-              res = await _flutterAudioManager.changeToReceiver();
-              print("change to receiver:$res");
-            }
-            await _getInput();
+            final currentInput = await _flutterAudioManager.getCurrentOutput();
+            print('Current Input');
+            print(currentInput.name);
+            print(currentInput.port.index);
+            final avaliableOutputs =
+                await _flutterAudioManager.getAvailableInputs();
+            avaliableOutputs.forEach((element) {
+              print('Avaliable');
+              print(element.name);
+            });
+            
+            // bool res = false;
+            // if (_currentInput.port == AudioPort.receiver) {
+            //   res = await _flutterAudioManager.changeToSpeaker();
+            //   print("change to speaker:$res");
+            // } else {
+            //   res = await _flutterAudioManager.changeToReceiver();
+            //   print("change to receiver:$res");
+            // }
+            // await _getInput();
           },
         ),
       ),

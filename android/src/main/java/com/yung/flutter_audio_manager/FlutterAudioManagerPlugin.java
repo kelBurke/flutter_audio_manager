@@ -1,14 +1,14 @@
 package com.yung.flutter_audio_manager;
 
 import androidx.annotation.NonNull;
+import androidx.mediarouter.media.MediaControlIntent;
+import androidx.mediarouter.media.MediaRouteSelector;
 import androidx.mediarouter.media.MediaRouter;
 
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.content.Context;
-import android.os.Build;
-import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +20,6 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 /** FlutterAudioManagerPlugin */
 public class FlutterAudioManagerPlugin implements FlutterPlugin, MethodCallHandler {
@@ -28,9 +27,11 @@ public class FlutterAudioManagerPlugin implements FlutterPlugin, MethodCallHandl
   private AudioManager audioManager;
   private Context activeContext;
   private AudioChangeReceiver receiver;
+  private MediaRouter mediaRouter;
+  private MediaRouter.Callback mediaRouteCallback;
   AudioEventListener listener;
 
-  @Override
+    @Override
   public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
     onAttachedToEngine(binding.getApplicationContext(), binding.getBinaryMessenger());
   }
@@ -47,13 +48,28 @@ public class FlutterAudioManagerPlugin implements FlutterPlugin, MethodCallHandl
         channel.invokeMethod("inputChanged", 1);
       }
     };
-    channel = new MethodChannel(messenger, "flutter_audio_manager");
-    channel.setMethodCallHandler(this);
-    receiver = new AudioChangeReceiver(listener);
-    IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
-    activeContext = applicationContext;
-    activeContext.registerReceiver(receiver, filter);
-    audioManager = (AudioManager) activeContext.getSystemService(Context.AUDIO_SERVICE);
+
+      channel = new MethodChannel(messenger, "flutter_audio_manager");
+      channel.setMethodCallHandler(this);
+      receiver = new AudioChangeReceiver(listener);
+      IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
+      activeContext = applicationContext;
+      activeContext.registerReceiver(receiver, filter);
+      audioManager = (AudioManager) activeContext.getSystemService(Context.AUDIO_SERVICE);
+
+      mediaRouter = MediaRouter.getInstance(activeContext);
+      mediaRouteCallback =  new MediaRouter.Callback() {
+          @Override
+          public void onRouteRemoved(MediaRouter router, MediaRouter.RouteInfo route) {
+              mediaRouter.unselect(MediaRouter.UNSELECT_REASON_DISCONNECTED);
+              super.onRouteRemoved(router, route);
+          }
+      };
+
+      mediaRouter.addCallback(new MediaRouteSelector.Builder().addControlCategory(
+              MediaControlIntent.CATEGORY_LIVE_AUDIO).build(),
+              mediaRouteCallback
+      );
   }
 
 
@@ -116,13 +132,14 @@ public class FlutterAudioManagerPlugin implements FlutterPlugin, MethodCallHandl
 
   private List<String> getCurrentOutput() {
     List<String> info = new ArrayList();
-     MediaRouter mr = MediaRouter.getInstance(activeContext);
-     MediaRouter.RouteInfo routeInfo =
-     mr.getSelectedRoute();
-     info.add(routeInfo.getName());
-     info.add(_getDeviceType(routeInfo.getDeviceType()));
+    MediaRouter.RouteInfo currentRoute =  mediaRouter.getSelectedRoute();
+    if(currentRoute == null) {
+        currentRoute = mediaRouter.getDefaultRoute();
+    }
+    info.add(currentRoute.getName());
+    info.add(_getDeviceType(currentRoute.getDeviceType()));
 
-     return info;
+    return info;
   }
 
   private List<List<String>> getAvailableInputs() {
@@ -153,6 +170,8 @@ public class FlutterAudioManagerPlugin implements FlutterPlugin, MethodCallHandl
   @Override
   public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
     activeContext.unregisterReceiver(receiver);
+    mediaRouter.removeCallback(mediaRouteCallback);
+
 
     if(channel != null){
       channel.setMethodCallHandler(null);
@@ -161,6 +180,8 @@ public class FlutterAudioManagerPlugin implements FlutterPlugin, MethodCallHandl
 
     audioManager = null;
     activeContext = null;
+    mediaRouter = null;
+    mediaRouteCallback = null;
     receiver = null;
     listener = null;
   }
