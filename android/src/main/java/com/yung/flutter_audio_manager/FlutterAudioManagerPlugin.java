@@ -47,7 +47,7 @@ public class FlutterAudioManagerPlugin implements FlutterPlugin, MethodCallHandl
       }
     };
     channel = new MethodChannel(messenger, "flutter_audio_manager");
-    channel.setMethodCallHandler(new FlutterAudioManagerPlugin());
+    channel.setMethodCallHandler(this);
     receiver = new AudioChangeReceiver(listener);
     IntentFilter filter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
     activeContext = applicationContext;
@@ -173,6 +173,7 @@ public class FlutterAudioManagerPlugin implements FlutterPlugin, MethodCallHandl
   @Override
   public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
     activeContext.unregisterReceiver(receiver);
+
     if(channel != null){
       channel.setMethodCallHandler(null);
       channel = null;

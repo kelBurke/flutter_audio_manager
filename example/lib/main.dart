@@ -11,6 +11,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   AudioInput _currentInput = AudioInput("unknow", 0);
+  FlutterAudioManager _flutterAudioManager = FlutterAudioManager();
   List<AudioInput> _availableInputs = [];
 
   @override
@@ -20,7 +21,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> init() async {
-    FlutterAudioManager.setListener(() async {
+    _flutterAudioManager.setListener(() async {
       print("-----changed-------");
       await _getInput();
       setState(() {});
@@ -32,9 +33,9 @@ class _MyAppState extends State<MyApp> {
   }
 
   _getInput() async {
-    _currentInput = await FlutterAudioManager.getCurrentOutput();
+    _currentInput = await _flutterAudioManager.getCurrentOutput();
     print("current:$_currentInput");
-    _availableInputs = await FlutterAudioManager.getAvailableInputs();
+    _availableInputs = await _flutterAudioManager.getAvailableInputs();
     print("available $_availableInputs");
   }
 
@@ -73,10 +74,10 @@ class _MyAppState extends State<MyApp> {
           onPressed: () async {
             bool res = false;
             if (_currentInput.port == AudioPort.receiver) {
-              res = await FlutterAudioManager.changeToSpeaker();
+              res = await _flutterAudioManager.changeToSpeaker();
               print("change to speaker:$res");
             } else {
-              res = await FlutterAudioManager.changeToReceiver();
+              res = await _flutterAudioManager.changeToReceiver();
               print("change to receiver:$res");
             }
             await _getInput();
