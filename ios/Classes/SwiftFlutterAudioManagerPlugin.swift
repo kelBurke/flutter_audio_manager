@@ -97,14 +97,14 @@ public class SwiftFlutterAudioManagerPlugin: NSObject, FlutterPlugin {
     func changeByPortType(_ ports:[AVAudioSession.Port]) -> Bool{
         let currentRoute = AVAudioSession.sharedInstance().currentRoute
         for output in currentRoute.outputs {
-            if(ports.firstIndex(of: output.portType) != nil){
+            if ports.firstIndex(of: output.portType) != nil {
                 return true;
             }
         }
         if let inputs = AVAudioSession.sharedInstance().availableInputs {
             for input in inputs {
-                if(ports.firstIndex(of: input.portType) != nil){
-                    try?AVAudioSession.sharedInstance().setPreferredInput(input);
+                if ports.firstIndex(of: input.portType) != nil {
+                    try? AVAudioSession.sharedInstance().setPreferredInput(input);
                     return true;
                 }
              }
@@ -114,27 +114,21 @@ public class SwiftFlutterAudioManagerPlugin: NSObject, FlutterPlugin {
     
     public override init() {
         super.init()
-        registerAudioRouteChangeBlock()
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(audioRouteChanged(notification:)),
+            name: AVAudioSession.routeChangeNotification,
+            object: nil
+        )
     }
     
-    func registerAudioRouteChangeBlock(){
-        NotificationCenter.default.addObserver( forName:AVAudioSession.routeChangeNotification, object: AVAudioSession.sharedInstance(), queue: nil) { notification in
-            guard let userInfo = notification.userInfo,
-                let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
-                let reason = AVAudioSession.RouteChangeReason(rawValue:reasonValue) else {
-                    return
-            }
-            self.channel!.invokeMethod("inputChanged",arguments: 1)
+    @objc private func audioRouteChanged(notification: NSNotification) {
+        guard let userInfo = notification.userInfo,
+            let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+            let _ = AVAudioSession.RouteChangeReason(rawValue:reasonValue) else {
+                return
         }
-    }
-    
-    public override 
-    
-    func removeObserverAfterLogout() {
-          NotificationCenter.default.removeObserver(self, name: AVAudioSession.routeChangeNotification, object: nil)
-      }
-    
-    public override deinit {
-        NotificationCenter.default.removeObserver(self)
+        self.channel!.invokeMethod("inputChanged", arguments: 1)
     }
 }
